@@ -19,7 +19,7 @@
    npm run dev
    ```
 
-4. **Open your browser**:developed during a 24-hour hackathon at IIT Jodhpur, this enhanced version provides comprehensive price monitoring, intelligent predictions, and seamless user experience across all devices. The platform specializes in Amazon price tracking with advanced bot detection avoidance and real-time notifications.
+4. **Open your browser**: This enhanced version provides comprehensive price monitoring, intelligent predictions, and seamless user experience across all devices. The platform specializes in Amazon price tracking with advanced bot detection avoidance and real-time notifications.
 
 ## ✨ Key Features
 
