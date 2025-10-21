@@ -1,6 +1,6 @@
-# WatchTheDrop v2 🚀
+# priceTracker v2 🚀
 
-**WatchTheDrop** is a cutting-edge full-stack price tracking application built with modern web techn1. **Install dependencies**:
+**priceTracker** is a cutting-edge full-stack price tracking application built with modern web techn1. **Install dependencies**:
 
    ```bash
    npm install
@@ -177,7 +177,7 @@ SERPAPI_API_KEY=your_serpapi_key_here
 ## 🏗️ Project Structure
 
 ```
-WatchTheDrop-v2/
+priceTracker-v2/
 ├── src/
 │   ├── app/                    # Next.js App Router
 │   │   ├── components/         # Reusable UI components

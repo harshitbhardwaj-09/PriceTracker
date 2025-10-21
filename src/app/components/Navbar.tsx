@@ -83,7 +83,7 @@ export const Navbar = () => {
           href="/"
           className="flex pr-4 sm:pr-0 text-gray-900 pl-2 sm:pl-3 items-center"
         >
-          <span className="font-bold text-lg sm:text-2xl">WatchTheDrop</span>
+          <span className="font-bold text-lg sm:text-2xl">priceTracker</span>
         </Link>
         <ul className=" hidden sm:flex gap-2">
           {navItems.map((item, index) => {

@@ -32,7 +32,7 @@ const Home = async () => {
 
             <h1 className="mt-8 sm:mt-4 text-5xl sm:text-6xl leading-[56px] sm:leading-[72px] font-semibold tracking-[-1px] sm:tracking-[-1.2px] text-gray-900">
               Unleash the Power of
-              <span className="text-primary"> WatchTheDrop</span>
+              <span className="text-primary"> priceTracker</span>
             </h1>
 
             <p className="mt-6 px-4 text-base sm:text-base">
