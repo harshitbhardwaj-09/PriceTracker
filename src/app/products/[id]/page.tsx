@@ -24,6 +24,30 @@ const ProductDetails = async ({ params: { id } }: Props) => {
   // 🚀 Get enhanced price data from PriceHistoryApp using the stored slug
   const enhancedPriceData = await getEnhancedPriceData(product.geturl);
 
+  // Helper function to ensure price is valid and positive
+  const getSafePrice = (price: number | undefined, fallback: number) => {
+    if (!price || price <= 0) return fallback;
+    return price;
+  };
+
+  // Calculate safe prices
+  const currentPrice = getSafePrice(
+    enhancedPriceData?.currentPrice || product.currentPrice,
+    product.originalPrice || 0
+  );
+  const lowestPrice = getSafePrice(
+    enhancedPriceData?.lowestPrice || product.lowestPrice,
+    currentPrice
+  );
+  const highestPrice = getSafePrice(
+    enhancedPriceData?.highestPrice || product.highestPrice,
+    currentPrice
+  );
+  const averagePrice = getSafePrice(
+    enhancedPriceData?.averagePrice || product.averagePrice,
+    currentPrice
+  );
+
   return (
     <div className="flex  flex-col gap-16 flex-wrap px-6 md:px-20 py-32">
       <div className="flex gap-28 xl:flex-row flex-col">
@@ -109,16 +133,15 @@ const ProductDetails = async ({ params: { id } }: Props) => {
           <div className="flex items-center flex-wrap gap-10 py-6 border-y border-y-[#E4E4E4]">
             <div className="flex flex-col gap-2">
               <p className="text-[34px] text-secondary font-bold">
-                {product.currency}{" "}
-                {formatNumber(
-                  enhancedPriceData?.currentPrice || product.currentPrice
-                )}
+                {product.currency} {formatNumber(currentPrice)}
               </p>
+              {!enhancedPriceData && (
+                <p className="text-sm text-amber-600 bg-amber-50 px-2 py-1 rounded">
+                  ⚠️ Product not tracked - showing lowest price
+                </p>
+              )}
               <p className="text-[21px] text-black opacity-50 line-through">
-                {product.currency}{" "}
-                {formatNumber(
-                  enhancedPriceData?.highestPrice || product.highestPrice
-                )}
+                {product.currency} {formatNumber(highestPrice)}
               </p>
               {enhancedPriceData?.discount && (
                 <p className="text-green-600 font-semibold">
@@ -169,32 +192,24 @@ const ProductDetails = async ({ params: { id } }: Props) => {
           <div className="my-7 flex flex-col gap-5">
             <div className="flex gap-5 flex-wrap">
               <PriceInfoCard
-                title="Current Price"
+                title={enhancedPriceData ? "Current Price" : "Lowest Price (Not Tracked)"}
                 iconSrc="/assets/icons/price-tag.svg"
-                value={`${product.currency} ${formatNumber(
-                  enhancedPriceData?.currentPrice || product.currentPrice
-                )}`}
+                value={`${product.currency} ${formatNumber(currentPrice)}`}
               />
               <PriceInfoCard
                 title="Average Price"
                 iconSrc="/assets/icons/chart.svg"
-                value={`${product.currency} ${formatNumber(
-                  enhancedPriceData?.averagePrice || product.averagePrice
-                )}`}
+                value={`${product.currency} ${formatNumber(averagePrice)}`}
               />
               <PriceInfoCard
                 title="Highest Price"
                 iconSrc="/assets/icons/arrow-up.svg"
-                value={`${product.currency} ${formatNumber(
-                  enhancedPriceData?.highestPrice || product.highestPrice
-                )}`}
+                value={`${product.currency} ${formatNumber(highestPrice)}`}
               />
               <PriceInfoCard
                 title="Lowest Price"
                 iconSrc="/assets/icons/arrow-down.svg"
-                value={`${product.currency} ${formatNumber(
-                  enhancedPriceData?.lowestPrice || product.lowestPrice
-                )}`}
+                value={`${product.currency} ${formatNumber(lowestPrice)}`}
               />
             </div>
 
