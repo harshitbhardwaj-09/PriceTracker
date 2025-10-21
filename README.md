@@ -25,10 +25,10 @@
 
 ### 🎯 Smart Price Tracking
 
-- **Amazon Integration**: Advanced web scraping with BrightData proxy support
+- **Amazon Integration**: Advanced web scraping with ScraperAPI for reliable data extraction
 - **Intelligent URL Cleaning**: Automatically removes tracking parameters and extracts product IDs
 - **Indian Currency Support**: Handles complex number formatting (₹2,999, ₹1,29,999)
-- **Anti-Bot Detection**: Sophisticated measures to ensure reliable data extraction
+- **Anti-Bot Detection**: ScraperAPI handles CAPTCHA and bot detection automatically
 
 ### 🤖 AI-Powered Insights
 
@@ -84,7 +84,7 @@
 
 ### Web Scraping & External Services
 
-- **BrightData**: Professional proxy service for reliable scraping
+- **ScraperAPI**: Professional scraping API with automatic CAPTCHA solving and proxy rotation
 - **Custom Scrapers**: Intelligent product data extraction
 - **PriceHistoryApp**: Integration for enhanced price analytics
 - **SerpAPI**: Google Shopping results for product search
@@ -102,8 +102,9 @@
 
 - Node.js 18+ and npm
 - MongoDB database
-- Redis instance
-- BrightData proxy credentials (optional)
+- Redis instance (Upstash)
+- ScraperAPI account and API key
+- SerpAPI account and API key
 
 ### Environment Variables
 
@@ -113,22 +114,24 @@ Create a `.env.local` file in the root directory:
 # Database
 MONGODB_URI=your_mongodb_connection_string
 
-# Redis
-UPSTASH_REDIS_URL=your_redis_url
-UPSTASH_REDIS_TOKEN=your_reddis_token
+# Redis (Upstash)
+UPSTASH_REDIS_URL=your_upstash_redis_url
+UPSTASH_REDIS_TOKEN=your_upstash_redis_token
 
-# BrightData Proxy (Optional)
-BRIGHT_DATA_USERNAME=your_username
-BRIGHT_DATA_PASSWORD=your_password
+# ScraperAPI (for Amazon scraping)
+# Get your key from https://www.scraperapi.com/
+SCRAPER_API_KEY=your_scraperapi_key_here
 
-# Email Service
-SMTP_HOST=your_smtp_host
+# Email Service (Nodemailer)
+SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
-SMTP_USER=your_email
-EMAIL_PASSWORD=your_password
+SMTP_USER=your_email@gmail.com
+EMAIL_PASSWORD=your_app_password
 
-# API Keys
-API_KEY=your_serpapi_key
+# SerpAPI (for Google Shopping results)
+# Get your key from https://serpapi.com/manage-api-key
+API_KEY=your_serpapi_key_here
+SERPAPI_API_KEY=your_serpapi_key_here
 ```
 
 ### Quick Start

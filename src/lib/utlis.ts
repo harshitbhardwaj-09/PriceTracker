@@ -198,7 +198,13 @@ export async function getEnhancedPriceData(productSlug: string | null) {
     }
 
     const jsonData = JSON.parse(jsonMatch[1]);
-    const productData = jsonData.props.pageProps.ogProduct;
+    const productData = jsonData?.props?.pageProps?.ogProduct;
+
+    // If no product data found, return null
+    if (!productData || !productData.price) {
+      console.warn('No product data found for slug:', productSlug);
+      return null;
+    }
 
     // Calculate buying recommendation
     const currentPrice = productData.price;

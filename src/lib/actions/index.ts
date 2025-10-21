@@ -19,7 +19,7 @@ export async function scrapeAndStoreProducts(producturl: string) {
 
   if (!producturl) return null;
   try {
-      connectToDB();
+      await connectToDB();
       // const scrapedProduct = await scrapeAmazonProducts(producturl);
       const url = new URL(producturl);
         const hostname = url.hostname;
@@ -76,32 +76,31 @@ export async function scrapeAndStoreProducts(producturl: string) {
 
 export async function getProductById(productId: string) {
   try {
-    connectToDB();
+    await connectToDB();
 
     const product = await Product.findOne({ _id: productId });
 
-    if(!product) return null;
+    if (!product) return null;
 
     return product;
-  } catch (error:any) {
-    throw new Error(`Failed to create/update product: ${error.message}`)
-    console.log(error);
+  } catch (error: any) {
+    throw new Error(`Failed to get product by ID: ${error.message}`);
   }
 }
 
 export async function getAllProducts() {
   try {
-    connectToDB();
-     const products = await Product.find();
-     return products
-  } catch (error:any) {
-    throw new Error(`Failed to create/update product: ${error.message}`)
+    await connectToDB();
+    const products = await Product.find();
+    return products;
+  } catch (error: any) {
+    throw new Error(`Failed to get all products: ${error.message}`);
   }
 }
 
 export async function getSimilarProducts(productId: string) {
   try {
-    connectToDB();
+    await connectToDB();
 
     // const currentProduct = await Product.findById(productId);
 

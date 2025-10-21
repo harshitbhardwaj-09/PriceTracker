@@ -38,55 +38,57 @@ const ratelimit = new Ratelimit({
   limiter: Ratelimit.fixedWindow(4, "100s"),
 });
 
+// Helper to get ScraperAPI key
+function getScraperApiKey(): string {
+  const key = process.env.SCRAPER_API_KEY;
+  if (!key) {
+    throw new Error(
+      "Missing ScraperAPI key. Set SCRAPER_API_KEY in your environment. Get a key at https://www.scraperapi.com/"
+    );
+  }
+  return key;
+}
+
+// Helper to fetch SerpAPI key from env with a sensible fallback and clear error
+function getSerpApiKey(): string {
+  const key = process.env.SERPAPI_API_KEY || process.env.API_KEY;
+  if (!key) {
+    throw new Error(
+      "Missing SerpAPI API key. Set SERPAPI_API_KEY (preferred) or API_KEY in your environment. Get a key at https://serpapi.com/manage-api-key"
+    );
+  }
+  return key;
+}
+
 export async function scrapeAmazonProducts(url: string) {
-  const username = String(process.env.BRIGHT_DATA_USERNAME);
-  const password = String(process.env.BRIGHT_DATA_PASSWORD);
-  const port = 22225;
-  const session_id = (1000000 * Math.random()) | 0;
+  const scraperApiKey = getScraperApiKey();
 
   // Clean the URL - remove tracking parameters that might cause issues
   const cleanUrl = cleanAmazonUrl(url);
   console.log("🔗 Original URL:", url);
   console.log("🔗 Cleaned URL:", cleanUrl);
 
+  // ScraperAPI endpoint - pass the target URL as a parameter
+  const scraperApiUrl = `http://api.scraperapi.com?api_key=${scraperApiKey}&url=${encodeURIComponent(
+    cleanUrl
+  )}&render=false&country_code=in`;
+
   const options = {
-    auth: {
-      username: `${username}-session-${session_id}`,
-      password,
-    },
-    host: "brd.superproxy.io",
-    port,
-    rejectUnauthorized: false,
+    timeout: 60000, // ScraperAPI can be slower, increase timeout
     headers: {
-      "User-Agent":
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      Accept:
-        "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
       "Accept-Language": "en-US,en;q=0.9",
-      "Accept-Encoding": "gzip, deflate, br",
-      "Sec-Ch-Ua":
-        '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
-      "Sec-Ch-Ua-Mobile": "?0",
-      "Sec-Ch-Ua-Platform": '"macOS"',
-      "Sec-Fetch-Dest": "document",
-      "Sec-Fetch-Mode": "navigate",
-      "Sec-Fetch-Site": "none",
-      "Sec-Fetch-User": "?1",
-      "Upgrade-Insecure-Requests": "1",
-      "Cache-Control": "no-cache",
-      Pragma: "no-cache",
     },
-    timeout: 45000, // Increase timeout
   };
 
   try {
     // Add random delay to avoid rate limiting
-    const delay = Math.random() * 3000 + 2000; // 2-5 seconds
+    const delay = Math.random() * 2000 + 1000; // 1-3 seconds
     console.log(`⏱️ Adding ${Math.round(delay)}ms delay...`);
     await new Promise((resolve) => setTimeout(resolve, delay));
 
-    console.log("🚀 Starting Amazon scrape for:", cleanUrl);
-    const response = await axios.get(cleanUrl, options);
+    console.log("🚀 Starting Amazon scrape via ScraperAPI for:", cleanUrl);
+    const response = await axios.get(scraperApiUrl, options);
     console.log("✅ Successfully fetched page, status:", response.status);
     console.log("📄 Response size:", response.data.length, "bytes");
 
@@ -316,16 +318,22 @@ export async function scrapeAmazonProducts(url: string) {
     console.error("Error message:", error.message);
     console.error("Error details:", error.response?.data?.substring(0, 200));
 
-    if (error.response?.status === 503) {
+    if (error.message?.includes("Missing ScraperAPI key")) {
+      throw new Error(error.message);
+    } else if (error.response?.status === 401 || error.response?.status === 403) {
       throw new Error(
-        `Amazon blocked the request (503). Try again later or check your proxy configuration.`
+        `ScraperAPI authentication failed. Check your SCRAPER_API_KEY in .env`
+      );
+    } else if (error.response?.status === 503) {
+      throw new Error(
+        `Amazon temporarily unavailable (503). Try again in a few moments.`
       );
     } else if (error.response?.status === 500) {
       throw new Error(
-        `Amazon server error (500). The URL might be invalid or temporarily unavailable.`
+        `Scraping error (500). The URL might be invalid or temporarily unavailable.`
       );
-    } else if (error.code === "ECONNREFUSED") {
-      throw new Error(`Connection refused. Check your proxy configuration.`);
+    } else if (error.code === "ECONNREFUSED" || error.code === "ETIMEDOUT") {
+      throw new Error(`Network error: ${error.code}. Check your internet connection.`);
     } else {
       throw new Error(`Error in fetching product: ${error.message}`);
     }
@@ -335,8 +343,47 @@ export async function scrapeAmazonProducts(url: string) {
 export async function googleProductSave(ProductGoogle: Product) {
   console.log(ProductGoogle, "product google");
   try {
-    connectToDB();
+    await connectToDB();
     const fullurl = await getGoogleresult(ProductGoogle.title);
+    
+    // Check if getGoogleresult returned an error
+    if (!fullurl || typeof fullurl !== 'string') {
+      console.error('Failed to get Google result URL');
+      // Use a default URL structure
+      const geturl = `products/${Date.now()}`;
+      
+      const data = {
+        url: ProductGoogle.product_link,
+        geturl,
+        currency: "₹",
+        image: ProductGoogle.thumbnail,
+        title: ProductGoogle.title,
+        currentPrice: ProductGoogle.extracted_price,
+        originalPrice: ProductGoogle.extracted_price,
+        priceHistory: [],
+        discountRate: ProductGoogle.extracted_price + 1000,
+        category: "Tech",
+        reviewsCount: ProductGoogle.reviews,
+        stars: ProductGoogle.rating,
+        isOutOfStock: false,
+        description: ProductGoogle.title,
+        lowestPrice: ProductGoogle.extracted_price - 1000,
+        highestPrice: ProductGoogle.extracted_price + 1000,
+        averagePrice: ProductGoogle.extracted_price,
+      };
+
+      const newProduct = await Product.findOneAndUpdate(
+        { url: data.url },
+        data,
+        { upsert: true, new: true }
+      );
+      
+      const redirectUrl = newProduct._id.toString();
+      revalidatePath(`/products/${redirectUrl}`);
+      revalidatePath("/", "layout");
+      return redirectUrl;
+    }
+    
     const parts = fullurl.split("/");
     const geturl = parts.slice(4).join("/");
     console.log(geturl);
@@ -392,8 +439,9 @@ export async function googleProductSave(ProductGoogle: Product) {
     return redirectUrl;
 
     // Handle the response data as needed
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error occurred while fetching data:", error);
+    throw new Error(`Failed to save Google product: ${error.message}`);
   }
 }
 export async function googleShoppingResult(title: string) {
@@ -402,7 +450,8 @@ export async function googleShoppingResult(title: string) {
   const { success, pending, limit, reset, remaining } = await ratelimit.limit(
     ip!
   );
-  console.log(success, pending, limit, reset, remaining);
+  const pendingResult = await pending;
+  console.log(success, pendingResult, limit, reset, remaining);
 
   if (!success) {
     // Router.push("/blocked");
@@ -410,13 +459,14 @@ export async function googleShoppingResult(title: string) {
   }
 
   try {
+    const apiKey = getSerpApiKey();
     const json = await getJson({
       engine: "google_shopping",
       q: `${title}`,
       location: "India",
       hl: "en",
       gl: "in",
-      api_key: process.env.API_KEY,
+      api_key: apiKey,
       num: 30,
     });
 
@@ -436,11 +486,12 @@ export async function getGoogleresult(title: string) {
   const { success, pending, limit, reset, remaining } = await ratelimit.limit(
     ip!
   );
-  console.log(success, pending, limit, reset, remaining);
+  const pendingResult = await pending;
+  console.log(success, pendingResult, limit, reset, remaining);
 
   if (!success) {
-    // Router.push("/blocked");
-    return { error: "bhai ab try mt kr" };
+    console.warn("Rate limit exceeded for getGoogleresult");
+    return null; // Return null instead of error object
   }
 
   try {
@@ -460,16 +511,23 @@ export async function getGoogleresult(title: string) {
     console.log("here");
     console.log(searchTerm);
     const result = await getJson("google", {
-      api_key: process.env["API_KEY"],
+      api_key: getSerpApiKey(),
       q: searchTerm,
     });
     console.log(result.organic_results);
+    
+    if (!result.organic_results || result.organic_results.length === 0) {
+      console.warn("No organic results found for:", searchTerm);
+      return null;
+    }
+    
     const jsonresult = result.organic_results;
     const urlproduct = jsonresult[0].link;
     console.log(urlproduct);
 
     return urlproduct;
   } catch (error: any) {
-    throw new Error(`error in fetching product ${error.message}`);
+    console.error(`Error in getGoogleresult: ${error.message}`);
+    return null; // Return null on error instead of throwing
   }
 }

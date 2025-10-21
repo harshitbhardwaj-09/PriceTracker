@@ -28,7 +28,7 @@ interface Product {
   const router = useRouter();
     // console.log("herehello")
     console.log(title);
-    const [shopResult, setShopResult] =useState([])
+    const [shopResult, setShopResult] = useState<Product[]>([]);
     useEffect(() => {
         async function fetchData() {
             try {
@@ -42,9 +42,25 @@ interface Product {
           error: 'Error',
 });
                const products = await googleShoppingResult(title!);
-                setShopResult(products);
+               
+               // Check if rate limited or error
+               if (products && typeof products === 'object' && 'error' in products) {
+                 toast.error('Rate limit exceeded. Please wait and try again.');
+                 setShopResult([]);
+                 return;
+               }
+               
+               // Ensure products is an array
+               if (Array.isArray(products)) {
+                 setShopResult(products);
+               } else {
+                 console.warn('No products found or invalid response');
+                 setShopResult([]);
+               }
             } catch (error) {
                 console.error("Error occurred while fetching data:", error);
+                toast.error('Failed to fetch products');
+                setShopResult([]);
             }
         }
     
@@ -76,7 +92,12 @@ interface Product {
     
 return(
   <div className="flex flex-wrap pt-24 items-center justify-evenly px-8 gap-x-8 gap-y-16">
-    {shopResult.map((product:any, index:any) => (
+    {shopResult.length === 0 ? (
+      <div className="w-full text-center py-20">
+        <p className="text-2xl text-gray-500">No products found. Try a different search or wait for rate limit to reset.</p>
+      </div>
+    ) : (
+      shopResult.map((product:any, index:any) => (
         <div key={index} className="sm:w-[292px] sm:max-w-[292px] w-full flex-1 flex flex-col gap-4 rounded-md" >
      <Link href={"#"} onClick={() => handleClick(product)} className="sm:w-[292px] sm:max-w-[292px] w-full flex-1 flex flex-col gap-4 rounded-md">
            <div className="flex-1 relative flex flex-col gap-5 p-4 rounded-md">
@@ -105,7 +126,8 @@ return(
            </div>
          </Link>
          </div>
-        ))}
+        ))
+    )}
         </div>
 );
 }
